@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -34,18 +36,20 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ApiResponse<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException exception) {
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationExceptions(MethodArgumentNotValidException exception) {
         Map<String, String> errors = new HashMap<>();
 
         for (FieldError error : exception.getBindingResult().getFieldErrors()) {
             errors.put(error.getField(), error.getDefaultMessage());
         }
 
-        return ApiResponse.<Map<String, String>>builder()
+        ApiResponse<Map<String, String>> response = ApiResponse.<Map<String, String>>builder()
                 .status("error")
                 .message("Validation error occurred")
                 .error(errors)
                 .build();
+
+        return ResponseEntity.status(BAD_REQUEST).body(response);
     }
 
 }
