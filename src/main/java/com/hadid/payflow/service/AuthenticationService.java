@@ -1,11 +1,10 @@
 package com.hadid.payflow.service;
 
+import com.hadid.payflow.dto.request.UserAuthenticationRequest;
 import com.hadid.payflow.dto.request.UserRegistrationRequest;
 import com.hadid.payflow.dto.response.ApiResponse;
-import com.hadid.payflow.entity.Authentication;
-import com.hadid.payflow.entity.Company;
-import com.hadid.payflow.entity.Role;
-import com.hadid.payflow.entity.User;
+import com.hadid.payflow.dto.response.UserAuthenticationResponse;
+import com.hadid.payflow.entity.*;
 import com.hadid.payflow.enums.EmailTemplateName;
 import com.hadid.payflow.exception.BusinessException;
 import com.hadid.payflow.repository.AuthenticationRepository;
@@ -15,13 +14,16 @@ import com.hadid.payflow.repository.UserRepository;
 import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.hadid.payflow.exception.BusinessErrorCodes.*;
 
@@ -40,6 +42,10 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
 
     private final EmailService emailService;
+
+    private final JwtService jwtService;
+
+    private final AuthenticationManager authenticationManager;
 
     public ApiResponse<User> register(UserRegistrationRequest request) throws MessagingException {
         List<Role> userRoles = request.getRoles()
@@ -154,6 +160,37 @@ public class AuthenticationService {
                 .status("success")
                 .message("Account successfully activated")
                 .build();
+    }
+
+    public UserAuthenticationResponse authenticate(UserAuthenticationRequest request) {
+        try {
+            var auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsername(),
+                            request.getPassword()
+                    )
+            );
+
+            var userPrincipal = (UserPrincipal) auth.getPrincipal();
+            User user = userPrincipal.getUser();
+
+            if (!user.getCompany().getCompanyId().equals(request.getCompanyId())) {
+                throw new BusinessException(INVALID_CREDENTIALS);
+            }
+
+            var claims = new HashMap<String, Object>();
+            claims.put("companyId", request.getCompanyId());
+
+            var jwtToken = jwtService.generateToken(claims, userPrincipal);
+
+            return UserAuthenticationResponse.builder()
+                    .status("success")
+                    .token(jwtToken)
+                    .build();
+
+        } catch (BadCredentialsException e) {
+            throw new BusinessException(INVALID_CREDENTIALS);
+        }
     }
 
 }

@@ -1,7 +1,9 @@
 package com.hadid.payflow.controller;
 
+import com.hadid.payflow.dto.request.UserAuthenticationRequest;
 import com.hadid.payflow.dto.request.UserRegistrationRequest;
 import com.hadid.payflow.dto.response.ApiResponse;
+import com.hadid.payflow.dto.response.UserAuthenticationResponse;
 import com.hadid.payflow.entity.User;
 import com.hadid.payflow.service.AuthenticationService;
 import jakarta.mail.MessagingException;
@@ -33,5 +35,10 @@ public class AuthenticationController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 
+    @PostMapping("/authenticate")
+    public ResponseEntity<UserAuthenticationResponse> authenticate(@RequestBody @Valid UserAuthenticationRequest request) {
+        UserAuthenticationResponse response = authenticationService.authenticate(request);
+        return ResponseEntity.ok(response);
+    }
 
 }
