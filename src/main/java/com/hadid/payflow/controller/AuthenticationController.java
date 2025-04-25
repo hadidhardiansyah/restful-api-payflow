@@ -7,11 +7,9 @@ import com.hadid.payflow.service.AuthenticationService;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import static org.springframework.http.HttpStatus.CREATED;
 
@@ -28,5 +26,12 @@ public class AuthenticationController {
         ApiResponse<User> response = authenticationService.register(request);
         return ResponseEntity.status(CREATED).body(response);
     }
+
+    @GetMapping("/activate-account")
+    public ResponseEntity<ApiResponse<?>> activateAccount(@RequestParam String token) throws MessagingException {
+        ApiResponse<?> response = authenticationService.activateAccount(token);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+    }
+
 
 }

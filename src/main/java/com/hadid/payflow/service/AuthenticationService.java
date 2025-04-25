@@ -13,6 +13,7 @@ import com.hadid.payflow.repository.CompanyRepository;
 import com.hadid.payflow.repository.RoleRepository;
 import com.hadid.payflow.repository.UserRepository;
 import jakarta.mail.MessagingException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -124,6 +125,35 @@ public class AuthenticationService {
         }
 
         return codeBuilder.toString();
+    }
+
+    @Transactional
+    public ApiResponse<Void> activateAccount(String token) throws MessagingException {
+        Authentication savedToken = authenticationRepository.findByToken(token)
+                .orElseThrow(() -> new BusinessException(INVALID_ACTIVATION_CODE));
+
+        if (LocalDateTime.now().isAfter(savedToken.getExpiresAt())) {
+            sendValidationEmail(savedToken.getUser());
+
+            throw new BusinessException(EXPIRED_ACTIVATION_CODE);
+        }
+
+        var user = userRepository.findById(savedToken.getUser().getId())
+                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+
+        if (user.isEnabled()) {
+            throw new BusinessException(ACCOUNT_ALREADY_ACTIVATED);
+        }
+
+        user.setEnabled(true);
+        userRepository.save(user);
+        savedToken.setValidatedAt(LocalDateTime.now());
+        authenticationRepository.save(savedToken);
+
+        return ApiResponse.<Void>builder()
+                .status("success")
+                .message("Account successfully activated")
+                .build();
     }
 
 }
