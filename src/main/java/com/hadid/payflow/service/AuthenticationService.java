@@ -2,11 +2,11 @@ package com.hadid.payflow.service;
 
 import com.hadid.payflow.dto.request.UserAuthenticationRequest;
 import com.hadid.payflow.dto.request.UserRegistrationRequest;
-import com.hadid.payflow.dto.response.ApiResponse;
-import com.hadid.payflow.dto.response.UserAuthenticationResponse;
+import com.hadid.payflow.dto.response.*;
 import com.hadid.payflow.entity.*;
 import com.hadid.payflow.enums.EmailTemplateName;
 import com.hadid.payflow.exception.BusinessException;
+import com.hadid.payflow.mapper.UserMapper;
 import com.hadid.payflow.repository.AuthenticationRepository;
 import com.hadid.payflow.repository.CompanyRepository;
 import com.hadid.payflow.repository.RoleRepository;
@@ -47,7 +47,9 @@ public class AuthenticationService {
 
     private final AuthenticationManager authenticationManager;
 
-    public ApiResponse<User> register(UserRegistrationRequest request) throws MessagingException {
+    private final UserMapper userMapper;
+
+    public ApiResponse<UserRegistrationResponse> register(UserRegistrationRequest request) throws MessagingException {
         List<Role> userRoles = request.getRoles()
                         .stream()
                                 .map(role -> "ROLE_" + role.toUpperCase())
@@ -60,25 +62,18 @@ public class AuthenticationService {
         Company companyId = companyRepository.findByCompanyId(request.getCompanyId())
                 .orElseThrow(() -> new BusinessException(COMPANY_ID_NOT_FOUND));
 
-        var user = User.builder()
-                .company(companyId)
-                .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .email(request.getEmail())
-                .enabled(false)
-                .roles(userRoles)
-                .createdDate(LocalDateTime.now())
-                .build();
+        User user = userMapper.toUser(request, userRoles, companyId, passwordEncoder);
 
         userRepository.save(user);
         sendValidationEmail(user);
 
-        return ApiResponse.<User>builder()
+        UserRegistrationResponse userRegistrationResponse = userMapper.toUserResponse(user);
+
+        return ApiResponse.<UserRegistrationResponse>builder()
                 .status("success")
                 .message("User successfully registered")
-                .data(user)
+                .data(userRegistrationResponse)
                 .build();
-
     }
 
     private void validateUserUniqueness(UserRegistrationRequest request) throws BusinessException {

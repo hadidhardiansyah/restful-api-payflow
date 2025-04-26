@@ -4,7 +4,7 @@ import com.hadid.payflow.dto.request.UserAuthenticationRequest;
 import com.hadid.payflow.dto.request.UserRegistrationRequest;
 import com.hadid.payflow.dto.response.ApiResponse;
 import com.hadid.payflow.dto.response.UserAuthenticationResponse;
-import com.hadid.payflow.entity.User;
+import com.hadid.payflow.dto.response.UserRegistrationResponse;
 import com.hadid.payflow.service.AuthenticationService;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
@@ -24,8 +24,8 @@ public class AuthenticationController {
     private final AuthenticationService authenticationService;
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<User>> register(@RequestBody @Valid UserRegistrationRequest request) throws MessagingException {
-        ApiResponse<User> response = authenticationService.register(request);
+    public ResponseEntity<ApiResponse<UserRegistrationResponse>> register(@RequestBody @Valid UserRegistrationRequest request) throws MessagingException {
+        ApiResponse<UserRegistrationResponse> response = authenticationService.register(request);
         return ResponseEntity.status(CREATED).body(response);
     }
 
