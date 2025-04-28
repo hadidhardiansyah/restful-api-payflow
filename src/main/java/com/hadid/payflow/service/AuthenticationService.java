@@ -24,6 +24,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.hadid.payflow.exception.BusinessErrorCodes.*;
 
@@ -177,6 +178,7 @@ public class AuthenticationService {
 
             return UserAuthenticationResponse.builder()
                     .status("success")
+                    .roles(userPrincipal.getUser().getRoles().stream().map(Role::getName).collect(Collectors.toList()))
                     .token(jwtToken)
                     .build();
 
