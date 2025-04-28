@@ -29,9 +29,8 @@ public class User {
 
     private boolean enabled;
 
-    @ManyToOne
-    @JoinColumn(name = "company_id", nullable = false)
-    private Company company;
+    @ManyToMany(fetch = FetchType.EAGER)
+    private List<Company> companies;
 
     @ManyToMany(fetch = FetchType.EAGER)
     private List<Role> roles;

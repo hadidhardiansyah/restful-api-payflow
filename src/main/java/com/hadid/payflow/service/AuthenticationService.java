@@ -48,6 +48,7 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
 
     private final UserMapper userMapper;
+    private final CustomUserDetailsService customUserDetailsService;
 
     public ApiResponse<UserRegistrationResponse> register(UserRegistrationRequest request) throws MessagingException {
         List<Role> userRoles = request.getRoles()
@@ -62,7 +63,9 @@ public class AuthenticationService {
         Company companyId = companyRepository.findByCompanyId(request.getCompanyId())
                 .orElseThrow(() -> new BusinessException(COMPANY_ID_NOT_FOUND));
 
-        User user = userMapper.toUser(request, userRoles, companyId, passwordEncoder);
+        List<Company> companies = List.of(companyId);
+
+        User user = userMapper.toUser(request, userRoles, companies, passwordEncoder);
 
         userRepository.save(user);
         sendValidationEmail(user);
@@ -77,7 +80,7 @@ public class AuthenticationService {
     }
 
     private void validateUserUniqueness(UserRegistrationRequest request) throws BusinessException {
-        boolean exists = userRepository.findByUsernameAndCompanyCompanyId(
+        boolean exists = userRepository.findByUsernameAndCompaniesCompanyId(
                 request.getUsername(),
                 request.getCompanyId()
         ).isPresent();
@@ -161,18 +164,12 @@ public class AuthenticationService {
         try {
             var auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            request.getUsername(),
+                            request.getUsername() + ":" + request.getCompanyId(),
                             request.getPassword()
                     )
             );
 
             var userPrincipal = (UserPrincipal) auth.getPrincipal();
-            User user = userPrincipal.getUser();
-
-            if (!user.getCompany().getCompanyId().equals(request.getCompanyId())) {
-                throw new BusinessException(INVALID_CREDENTIALS);
-            }
-
             var claims = new HashMap<String, Object>();
             claims.put("companyId", request.getCompanyId());
 

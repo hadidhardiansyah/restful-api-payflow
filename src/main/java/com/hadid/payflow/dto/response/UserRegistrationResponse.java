@@ -17,7 +17,7 @@ public class UserRegistrationResponse {
 
     private boolean enabled;
 
-    private CompanyResponse company;
+    private List<CompanyResponse> companies;
 
     private List<String> roles;
 

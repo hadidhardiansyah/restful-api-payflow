@@ -20,9 +20,24 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String usernameAndCompanyId) throws UsernameNotFoundException {
 
-        User user = userRepository.findByUsername(username)
+//        User user = userRepository.findByUsername(username)
+//                .orElseThrow(() -> new BusinessException(INVALID_CREDENTIALS));
+//
+//        if (!user.isEnabled()) {
+//            throw new BusinessException(ACCOUNT_NOT_ACTIVATED);
+//        }
+//
+//        return new UserPrincipal(user);
+        String[] parts = usernameAndCompanyId.split(":");
+        if (parts.length != 2) {
+            throw new BusinessException(INVALID_CREDENTIALS);
+        }
+        String username = parts[0];
+        String companyId = parts[1];
+
+        User user = userRepository.findByUsernameAndCompaniesCompanyId(username, companyId)
                 .orElseThrow(() -> new BusinessException(INVALID_CREDENTIALS));
 
         if (!user.isEnabled()) {

@@ -1,5 +1,6 @@
 package com.hadid.payflow.service;
 
+import com.hadid.payflow.entity.UserPrincipal;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -18,7 +19,13 @@ import java.util.function.Function;
 public class JwtService {
 
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+        String subject = extractClaim(token, Claims::getSubject);
+        return subject.split(":")[0];
+    }
+
+    public String extractCompanyId(String token) {
+        String subject = extractClaim(token, Claims::getSubject);
+        return subject.split(":")[1];
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -50,6 +57,10 @@ public class JwtService {
             UserDetails userDetails,
             long jwtExpiration
     ) {
+        UserPrincipal userPrincipal = (UserPrincipal) userDetails;
+
+        String companyId = userPrincipal.getUser().getCompanies().get(0).getCompanyId();
+
         var authorities = userDetails.getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
@@ -58,7 +69,7 @@ public class JwtService {
         return Jwts
                 .builder()
                 .setClaims(extraClaims)
-                .setSubject(userDetails.getUsername())
+                .setSubject(userDetails.getUsername() + ":" + companyId)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .claim("authorities", authorities)

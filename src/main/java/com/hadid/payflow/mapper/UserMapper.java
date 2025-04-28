@@ -23,12 +23,18 @@ public class UserMapper {
                 .build();
     }
 
-    public User toUser(UserRegistrationRequest request, List<Role> roles, Company company, PasswordEncoder passwordEncoder) {
+    List<CompanyResponse> toCompanyResponses(List<Company> companies) {
+        return companies.stream()
+                .map(this::toCompanyResponse)
+                .collect(Collectors.toList());
+    }
+
+    public User toUser(UserRegistrationRequest request, List<Role> roles, List<Company> companies, PasswordEncoder passwordEncoder) {
         return User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .company(company)
+                .companies(companies)
                 .enabled(false)
                 .roles(roles)
                 .createdDate(LocalDateTime.now())
@@ -40,7 +46,7 @@ public class UserMapper {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .enabled(user.isEnabled())
-                .company(toCompanyResponse(user.getCompany()))
+                .companies(toCompanyResponses(user.getCompanies()))
                 .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toList()))
                 .build();
     }
